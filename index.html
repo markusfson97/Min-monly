@@ -1,0 +1,1316 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monly - Din personliga budgetapp</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif; background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%); color: #e8eaf6; min-height: 100vh; padding: 20px; }
+        .app { max-width: 480px; margin: 0 auto; min-height: 100vh; }
+        .view-header { display: flex; justify-content: center; align-items: center; margin-bottom: 32px; position: relative; }
+        .view-header h2 { font-size: 24px; font-weight: 700; color: #e8eaf6; text-align: center; }
+        .view-header-left { position: absolute; left: 0; }
+        .view-header-right { position: absolute; right: 0; padding-right: 0; }
+        .icon-button { background: none; border: none; color: #667eea; cursor: pointer; padding: 8px; font-size: 18px; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 8px; }
+        .icon-button:hover { background: rgba(102, 126, 234, 0.1); }
+        .primary-button { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 16px 32px; border-radius: 16px; font-size: 16px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; margin-bottom: 12px; box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4); transition: all 0.3s ease; }
+        .primary-button:hover { transform: translateY(-4px); }
+        .primary-button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .secondary-button { background: rgba(159, 168, 218, 0.1); color: #667eea; border: 2px solid rgba(159, 168, 218, 0.2); padding: 14px 28px; border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; margin-bottom: 12px; }
+        .secondary-button:hover { background: rgba(159, 168, 218, 0.15); }
+        .start-view { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: calc(100vh - 40px); gap: 32px; }
+        .logo { font-size: 64px; font-weight: 800; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
+        .tagline { font-size: 16px; color: #9fa8da; }
+        .form-group { margin-bottom: 24px; }
+        .form-group label { display: block; font-size: 14px; color: #9fa8da; margin-bottom: 8px; font-weight: 600; }
+        .form-group input, .form-group select { background: rgba(10, 14, 39, 0.6); border: 2px solid rgba(159, 168, 218, 0.2); border-radius: 12px; padding: 12px; font-size: 15px; color: #e8eaf6; font-family: inherit; width: 100%; }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: #667eea; }
+        /* Hide number input spinners */
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+        select { background: rgba(10, 14, 39, 0.6) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23667eea' d='M6 9L1 4h10z'/%3E%3C/svg%3E") no-repeat right 8px center; padding-right: 28px; }
+        .flex-row { display: flex; gap: 12px; }
+        .flex-row input, .flex-row select { flex: 1; }
+        
+        .category-card { background: rgba(159, 168, 218, 0.05); border: 2px solid rgba(159, 168, 218, 0.1); border-radius: 20px; padding: 24px; margin-bottom: 16px; cursor: pointer; transition: all 0.3s ease; }
+        .category-card:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3); }
+        .category-card.utgifter { cursor: default; }
+        .category-card.utgifter:hover { transform: none; box-shadow: none; }
+        .category-card.fasta { border-color: rgba(244, 67, 54, 0.3); }
+        .category-card.nojen { border-color: rgba(255, 152, 0, 0.3); }
+        .category-card.sparande { border-color: rgba(76, 175, 80, 0.3); }
+        .category-card h3 { font-size: 18px; font-weight: 700; color: #e8eaf6; margin-bottom: 8px; }
+        .category-card .percentage { font-size: 14px; color: #9fa8da; font-weight: 600; margin-bottom: 12px; }
+        .category-card .budget-amount { font-size: 32px; font-weight: 800; color: #e8eaf6; margin-bottom: 16px; }
+        .category-card .remaining { display: flex; justify-content: space-between; font-size: 16px; font-weight: 700; padding-top: 12px; border-top: 1px solid rgba(159, 168, 218, 0.1); }
+        .category-card .remaining.negative { color: #e57373; }
+        .category-card .remaining:not(.negative) { color: #81c784; }
+        
+        .income-display { background: rgba(102, 126, 234, 0.1); border-radius: 12px; padding: 16px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; }
+        .income-display-label { font-size: 12px; color: #9fa8da; }
+        .income-display-amount { font-size: 24px; font-weight: 700; color: #667eea; }
+        
+        .summary-bars { display: flex; gap: 12px; margin-bottom: 24px; }
+        .summary-bar { flex: 1; border-radius: 12px; padding: 16px; background: rgba(159, 168, 218, 0.05); border: 2px solid rgba(159, 168, 218, 0.1); }
+        .summary-bar-label { font-size: 12px; color: #9fa8da; margin-bottom: 8px; }
+        .summary-bar-amount { font-size: 18px; font-weight: 700; }
+        
+        .menu-button { background: rgba(159, 168, 218, 0.05); border: 2px solid rgba(159, 168, 218, 0.1); border-radius: 16px; padding: 20px; display: flex; align-items: center; gap: 16px; cursor: pointer; font-size: 16px; font-weight: 600; color: #e8eaf6; margin-bottom: 12px; transition: all 0.2s ease; width: 100%; }
+        .menu-button:hover { background: rgba(159, 168, 218, 0.1); transform: translateX(4px); }
+        
+        .total-card { background: rgba(159, 168, 218, 0.1); border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+        .total-card h3 { font-size: 12px; color: #9fa8da; text-transform: uppercase; margin-bottom: 8px; font-weight: 600; }
+        .total-card-amount { font-size: 18px; font-weight: 700; }
+        .total-card.fasta { border-left: 4px solid rgba(244, 67, 54, 0.5); }
+        .total-card.nojen { border-left: 4px solid rgba(255, 193, 7, 0.5); }
+        .total-card.sparande { border-left: 4px solid rgba(76, 175, 80, 0.5); }
+        
+        .special-box { background: linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.1) 100%); border: 2px solid rgba(102, 126, 234, 0.4); border-radius: 16px; padding: 20px; margin-bottom: 24px; }
+        .special-box-amount { font-size: 28px; font-weight: 700; color: #667eea; margin: 12px 0; }
+        
+        .expense-item { background: rgba(159, 168, 218, 0.05); border: 2px solid rgba(159, 168, 218, 0.1); border-radius: 14px; padding: 16px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .expense-item[style*="flex-direction"] { align-items: flex-start; }
+        .expense-name { flex: 1; font-size: 15px; font-weight: 600; }
+        .expense-amount { font-size: 14px; font-weight: 700; color: #667eea; margin: 0 12px; }
+        .delete-button { background: none; border: none; color: #ef5350; cursor: pointer; font-size: 20px; padding: 8px; opacity: 1; transition: all 0.2s ease; font-weight: bold; }
+        .delete-button:hover { opacity: 1; transform: scale(1.25); color: #ff1744; }
+        
+        .history-month { background: rgba(159, 168, 218, 0.05); border: 2px solid rgba(159, 168, 218, 0.1); border-radius: 16px; padding: 24px; margin-bottom: 16px; cursor: pointer; transition: all 0.3s ease; }
+        .history-month:hover { background: rgba(159, 168, 218, 0.1); transform: translateY(-4px); box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3); }
+        .history-month h3 { font-size: 18px; font-weight: 700; margin-bottom: 16px; color: #e8eaf6; }
+        .history-month-stats { font-size: 14px; color: #9fa8da; }
+        
+        .budget-option { background: rgba(159, 168, 218, 0.05); border: 2px solid rgba(159, 168, 218, 0.2); border-radius: 12px; padding: 16px; color: #e8eaf6; cursor: pointer; transition: all 0.2s ease; }
+        .budget-option:hover { background: rgba(159, 168, 218, 0.1); }
+        .budget-option.active { background: rgba(102, 126, 234, 0.3); border-color: rgba(102, 126, 234, 0.6); }
+        .budget-option-title { font-weight: 600; margin-bottom: 4px; font-size: 15px; }
+        .budget-option-desc { font-size: 13px; color: #9fa8da; }
+    </style>
+</head>
+<body>
+    <div class="app" id="app"></div>
+
+    <script>
+        const languages = {
+            sv: {
+                appName: 'Monly', tagline: 'Enkel privatekonomi för alla', createFirst: '📅 Starta budgetering',
+                income: 'Månadsinkomst', next: 'Börja budgetera', back: 'Tillbaka', myProfile: 'Min profil',
+                account: 'Konto', history: 'Historik', totalResult: 'Totalt resultat', editExpenses: 'Redigera utgifter',
+                language: 'Språk', currency: 'Valuta', name: 'Namn', fixedCosts: 'Fasta kostnader',
+                fun: 'Nöjen', savings: 'Sparande', remaining: 'Kvar', used: 'Använt', leftToUse: 'Kvar att använda',
+                forFunAndEntertainment: 'för nöje och underhållning', addExpense: 'Lägg till utgift', 
+                noExpenses: 'Inga poster ännu', totalIncome: 'Total inkomst', totalExpenses: 'Totala utgifter',
+                totalSavings: 'Totalt sparande', totalUsed: 'Totalt använt', totalRemaining: 'Totalt kvar',
+                extraIncome: 'Extra inkomst'
+            },
+            en: {
+                appName: 'Monly', tagline: 'Easy personal finance for everyone', createFirst: '📅 Start budgeting',
+                income: 'Monthly income', next: 'Start budgeting', back: 'Back', myProfile: 'My profile',
+                account: 'Account', history: 'History', totalResult: 'Total result', editExpenses: 'Edit expenses',
+                language: 'Language', currency: 'Currency', name: 'Name', fixedCosts: 'Fixed costs',
+                fun: 'Fun', savings: 'Savings', remaining: 'Remaining', used: 'Used', leftToUse: 'Left to use',
+                forFunAndEntertainment: 'for fun and entertainment', addExpense: 'Add expense', 
+                noExpenses: 'No items yet', totalIncome: 'Total income', totalExpenses: 'Total expenses',
+                totalSavings: 'Total savings', totalUsed: 'Total used', totalRemaining: 'Total remaining',
+                extraIncome: 'Extra income'
+            }
+        };
+
+        const state = {
+            view: 'start', language: 'sv', currency: 'SEK', userName: '',
+            currentMonth: null, // { monthKey, displayDate, income, extraIncome, categories }
+            months: [], // Array of all saved months
+            selectedCategory: null, accounts: [], currentAccountId: null,
+            extraIncome: 0, showExtraIncomeForm: false, budgetModel: 'recommended',
+            customPercentages: { fasta: 50, nojen: 30, sparande: 20 },
+            priceToTime: { incomeType: 'monthly', incomeAmount: 0, price: 0 },
+            pendingIncome: 0, pendingMonth: new Date().getMonth() + 1, pendingYear: new Date().getFullYear(),
+            savedExpenseTemplate: null,
+            editingItem: null, // { key, id, name, amount }
+            totalResultView: 'month' // 'month' or 'year'
+        };
+
+        const currencies = {
+            'SEK': 'Svenska kronor', 'EUR': 'Euro', 'USD': 'US Dollar', 'GBP': 'British Pound',
+            'NOK': 'Norska kronor', 'DKK': 'Danska kronor'
+        };
+
+        function t(key) { return languages[state.language][key] || key; }
+
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('sv-SE', { style: 'currency', currency: state.currency, minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount);
+        }
+
+        function loadState() {
+            const saved = localStorage.getItem('monly_data');
+            if (saved) Object.assign(state, JSON.parse(saved));
+        }
+
+        function saveState() { localStorage.setItem('monly_data', JSON.stringify(state)); }
+
+        function render() {
+            switch(state.view) {
+                case 'start': renderStart(); break;
+                case 'createIncome': renderCreateIncome(); break;
+                case 'budget': renderBudget(); break;
+                case 'profile': renderProfile(); break;
+                case 'accountSettings': renderAccountSettings(); break;
+                case 'priceToTime': renderPriceToTime(); break;
+                case 'totalResult': renderTotalResult(); break;
+                case 'history': renderHistory(); break;
+                case 'editExpenses': renderEditExpenses(); break;
+                case 'category': renderCategory(); break;
+            }
+        }
+
+        function renderStart() {
+            app.innerHTML = `
+                <div class="start-view">
+                    <div style="text-align: center;">
+                        <div class="logo">${t('appName')}</div>
+                        <div class="tagline">${t('tagline')}</div>
+                    </div>
+                    <button class="primary-button" onclick="goTo('createIncome')">${t('createFirst')}</button>
+                </div>
+            `;
+        }
+
+        function renderCreateIncome() {
+            const monthNames = ['', 'Januari', 'Februari', 'Mars', 'April', 'Maj', 'Juni', 'Juli', 'Augusti', 'September', 'Oktober', 'November', 'December'];
+            const currentYear = new Date().getFullYear();
+            const years = [currentYear - 1, currentYear, currentYear + 1];
+
+            app.innerHTML = `
+                <div>
+                    <div class="view-header">
+                        <div class="view-header-left">
+                            <button class="icon-button" onclick="goTo('start')">←</button>
+                        </div>
+                        <h2>Ny månad</h2>
+                        <div class="view-header-right"></div>
+                    </div>
+
+                    <div style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.05) 100%); border: 2px solid rgba(102, 126, 234, 0.3); border-radius: 20px; padding: 28px; margin-bottom: 32px;">
+                        <div style="font-size: 12px; color: #9fa8da; text-transform: uppercase; font-weight: 600; margin-bottom: 12px;">Månadsinkomst</div>
+                        <input type="number" id="incomeInput" placeholder="0" value="${state.pendingIncome}" oninput="state.pendingIncome = parseFloat(this.value) || 0;" onfocus="if(this.value === '0') this.value = ''" required min="1" style="background: none; border: none; outline: none; font-size: 48px; font-weight: 800; color: #667eea; width: 100%; padding: 0; font-family: inherit; margin-bottom: 12px;">
+                        <div style="font-size: 14px; color: #9fa8da;">${state.currency}</div>
+                    </div>
+
+                    <div style="background: rgba(159, 168, 218, 0.05); border: 2px solid rgba(159, 168, 218, 0.1); border-radius: 16px; padding: 20px; margin-bottom: 32px;">
+                        <h3 style="font-size: 12px; color: #9fa8da; margin-bottom: 16px; font-weight: 600; text-transform: uppercase;">Välj månad & år</h3>
+                        <div style="display: flex; gap: 12px;">
+                            <select id="monthSelect" onchange="state.pendingMonth = parseInt(this.value);" style="flex: 1; background: rgba(10, 14, 39, 0.6); border: 2px solid rgba(159, 168, 218, 0.2); border-radius: 8px; padding: 10px; color: #e8eaf6; font-family: inherit; font-size: 14px;">
+                                ${monthNames.map((m, i) => `<option value="${i}" ${i === state.pendingMonth ? 'selected' : ''}>${m}</option>`).join('')}
+                            </select>
+                            <select id="yearSelect" onchange="state.pendingYear = parseInt(this.value);" style="width: 100px; background: rgba(10, 14, 39, 0.6); border: 2px solid rgba(159, 168, 218, 0.2); border-radius: 8px; padding: 10px; color: #e8eaf6; font-family: inherit; font-size: 14px;">
+                                ${years.map(y => `<option value="${y}" ${y === state.pendingYear ? 'selected' : ''}>${y}</option>`).join('')}
+                            </select>
+                        </div>
+                    </div>
+
+                    <h3 style="font-size: 14px; color: #9fa8da; margin-bottom: 16px; font-weight: 600;">Budgetfördelning</h3>
+
+                    <div class="budget-option ${state.budgetModel === 'recommended' ? 'active' : ''}" onclick="selectBudgetModel('recommended'); render()">
+                        <div class="budget-option-title">Rekommenderad (50/30/20)</div>
+                        <div class="budget-option-desc">Fasta: 50% | Nöjen: 30% | Sparande: 20%</div>
+                    </div>
+
+                    <div class="budget-option ${state.budgetModel === 'simple' ? 'active' : ''}" onclick="selectBudgetModel('simple'); render()" style="margin-top: 12px;">
+                        <div class="budget-option-title">Enkel översikt utan sparandet</div>
+                        <div class="budget-option-desc">Utgifter & Kvar i plånboken - utan %-basering</div>
+                    </div>
+
+                    <div class="budget-option ${state.budgetModel === 'custom' ? 'active' : ''}" onclick="selectBudgetModel('custom'); render()" style="margin-top: 12px;">
+                        <div class="budget-option-title">Egen fördelning</div>
+                        <div class="budget-option-desc">Du väljer själv hur du vill fördela</div>
+                    </div>
+
+                    ${state.budgetModel === 'custom' ? `
+                        <div style="background: rgba(159, 168, 218, 0.05); border: 2px solid rgba(159, 168, 218, 0.1); border-radius: 16px; padding: 20px; margin-top: 16px; margin-bottom: 24px;">
+                            <h3 style="font-size: 14px; color: #9fa8da; margin-bottom: 16px; font-weight: 600;">Ange dina egna procentsatser</h3>
+                            
+                            <div class="form-group">
+                                <label>Fasta kostnader (%)</label>
+                                <input type="number" id="customFasta" value="${state.customPercentages.fasta}" min="0" max="100" oninput="updateCustomPercentage('fasta', this.value)">
+                            </div>
+
+                            <div class="form-group">
+                                <label>Nöjen (%)</label>
+                                <input type="number" id="customNojen" value="${state.customPercentages.nojen}" min="0" max="100" oninput="updateCustomPercentage('nojen', this.value)">
+                            </div>
+
+                            <div class="form-group">
+                                <label>Sparande (%)</label>
+                                <input type="number" id="customSparande" value="${state.customPercentages.sparande}" min="0" max="100" oninput="updateCustomPercentage('sparande', this.value)">
+                            </div>
+
+                            <div style="background: rgba(102, 126, 234, 0.2); border: 2px solid rgba(102, 126, 234, 0.3); border-radius: 12px; padding: 12px; text-align: center;">
+                                <div style="font-size: 12px; color: #9fa8da; margin-bottom: 4px;">Totalt</div>
+                                <div style="font-size: 18px; font-weight: 700; color: ${(state.customPercentages.fasta + state.customPercentages.nojen + state.customPercentages.sparande) === 100 ? '#81c784' : '#e57373'};">${state.customPercentages.fasta + state.customPercentages.nojen + state.customPercentages.sparande}%</div>
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    <button type="button" class="primary-button" onclick="createBudgetWithDate()" style="margin-top: 48px;" ${state.budgetModel === 'custom' && (state.customPercentages.fasta + state.customPercentages.nojen + state.customPercentages.sparande) !== 100 ? 'disabled' : ''}>Börja budgetera</button>
+                </div>
+            `;
+            document.getElementById('incomeInput').focus();
+        }
+
+        function renderBudget() {
+            if (!state.currentMonth) return;
+            const month = state.currentMonth;
+            const isSimpleMode = state.budgetModel === 'simple';
+            
+            // Load extraIncome from current month if it exists
+            if (month.extraIncome && month.extraIncome > 0) {
+                state.extraIncome = month.extraIncome;
+            }
+
+            let categoryHtml = '';
+            let totalSpent = 0;
+
+            if (isSimpleMode) {
+                // Simple mode: Utgifter and Kvar i plånboken
+                const utgifter = month.categories.utgifter || { name: 'Utgifter', items: [] };
+                const spent = utgifter.items.reduce((sum, item) => sum + item.amount, 0);
+                totalSpent = spent;
+                const totalIncome = month.income + state.extraIncome;
+                const remaining = totalIncome - spent;
+                const warningThreshold = totalIncome * 0.1; // 10% warning
+                const isWarning = remaining >= 0 && remaining <= warningThreshold;
+                const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
+                const dailyBudget = Math.round(remaining / daysInMonth);
+                
+                let dailyColor = '#81c784';
+                let psychoText = 'Okej, jag kan ta en lunch idag';
+                
+                if (remaining < 0) {
+                    dailyColor = '#e57373';
+                    psychoText = 'Fyfan, nu är jag fattig...';
+                } else if (isWarning) {
+                    dailyColor = '#ffa726';
+                    psychoText = 'Aj aj nu blir det matlådor';
+                }
+
+                categoryHtml = `
+                    <div class="category-card utgifter">
+                        <h3>${utgifter.name}</h3>
+                        <div class="budget-amount">${formatCurrency(spent)}</div>
+                        <div class="remaining ${remaining < 0 ? 'negative' : ''}" style="color: ${dailyColor};">
+                            <span style="color: ${dailyColor};">Kvar i plånboken:</span>
+                            <span style="color: ${dailyColor}; font-weight: 700;">${formatCurrency(remaining)}</span>
+                        </div>
+                        <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(159, 168, 218, 0.1); text-align: center;">
+                            <div style="font-size: 14px; color: #9fa8da; margin-bottom: 6px;">💰 Daglig budget</div>
+                            <div style="font-size: 32px; font-weight: 800; color: ${dailyColor};">${formatCurrency(Math.max(0, dailyBudget))}</div>
+                            <div style="font-size: 13px; color: ${dailyColor}; margin-top: 6px;">${psychoText}</div>
+                        </div>
+                        <button type="button" style="background: rgba(102, 126, 234, 0.15); border: none; border-radius: 12px; padding: 12px; color: #c5caf5; cursor: pointer; font-size: 14px; font-weight: 600; width: 100%; margin-top: 16px; transition: all 0.2s ease;" onmouseover="this.style.background = 'rgba(102, 126, 234, 0.25)'" onmouseout="this.style.background = 'rgba(102, 126, 234, 0.15)'" onclick="goToCategory('utgifter')">
+                            ➕ Lägg till utgift
+                        </button>
+                    </div>
+                `;
+            } else {
+                // Percentage-based mode: Fasta, Nöjen, Sparande
+                const totalBudget = Object.values(month.categories).reduce((sum, cat) => sum + cat.budget, 0);
+                totalSpent = Object.values(month.categories).reduce((sum, cat) => sum + cat.items.reduce((s, item) => s + item.amount, 0), 0);
+
+                for (const [key, cat] of Object.entries(month.categories)) {
+                    const spent = cat.items.reduce((sum, item) => sum + item.amount, 0);
+                    const remaining = cat.budget - spent;
+                    
+                    categoryHtml += `
+                        <div class="category-card ${key}">
+                            <h3>${cat.name}</h3>
+                            <div class="percentage">${cat.percentage}%</div>
+                            <div class="budget-amount">${formatCurrency(cat.budget)}</div>
+                            <div class="remaining ${remaining < 0 ? 'negative' : ''}">
+                                <span>${t('remaining')}:</span>
+                                <span>${formatCurrency(remaining)}</span>
+                            </div>
+                            <button type="button" style="background: rgba(102, 126, 234, 0.4); border: 2px solid rgba(102, 126, 234, 0.5); border-radius: 12px; padding: 10px; color: #667eea; cursor: pointer; font-size: 14px; font-weight: 600; width: 100%; margin-top: 16px;" onclick="goToCategory('${key}')">
+                                ➕ ${t('addExpense')}
+                            </button>
+                        </div>
+                    `;
+                }
+            }
+
+            app.innerHTML = `
+                <div>
+                    <div class="view-header">
+                        <div class="view-header-left"></div>
+                        <h2>${month.displayDate} Översikt</h2>
+                        <div class="view-header-right">
+                            <button class="icon-button" onclick="goTo('profile')">👤</button>
+                        </div>
+                    </div>
+
+                    <div style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.05) 100%); border: 2px solid rgba(102, 126, 234, 0.3); border-radius: 20px; padding: 28px; margin-bottom: 32px;">
+                        <div style="font-size: 12px; color: #9fa8da; text-transform: uppercase; font-weight: 600; margin-bottom: 12px;">${t('totalIncome')}</div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 16px;">
+                            <div style="flex: 1;">
+                                <input type="number" id="editableIncome" value="${month.income}" style="background: none; border: none; outline: none; font-size: 48px; font-weight: 800; color: #667eea; width: 100%; padding: 0; font-family: inherit;" onchange="updateMainIncome(this.value)">
+                                <div style="font-size: 14px; color: #9fa8da; margin-top: 8px;">${state.currency}</div>
+                            </div>
+                            <button class="secondary-button" style="width: auto; margin: 0; padding: 12px 20px; font-size: 14px; height: fit-content;" onclick="document.getElementById('editableIncome').focus()">✏️ Ändra</button>
+                        </div>
+                        ${!state.showExtraIncomeForm && state.extraIncome === 0 ? `
+                            <button class="primary-button" onclick="toggleExtraIncome()" style="margin-bottom: 0; background: rgba(102, 126, 234, 0.12); color: #a8b8f0; margin-top: 8px; box-shadow: none; border: none;">+ Lägg till extra inkomst</button>
+                        ` : ''}
+                    </div>
+
+                    ${state.showExtraIncomeForm ? `
+                        <div style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.05) 100%); border: 2px solid rgba(102, 126, 234, 0.3); border-radius: 20px; padding: 16px; margin-bottom: 24px; display: flex; gap: 8px;">
+                            <input type="number" id="extraIncomeInput" placeholder="Belopp" style="flex: 1; background: rgba(10, 14, 39, 0.6); border: 2px solid rgba(159, 168, 218, 0.2); border-radius: 8px; padding: 10px; color: #e8eaf6; font-family: inherit;">
+                            <button type="button" class="secondary-button" style="width: auto; margin: 0; padding: 10px 16px;" onclick="saveExtraIncome()">Lägg till</button>
+                            <button type="button" class="secondary-button" style="width: auto; margin: 0; padding: 10px 16px;" onclick="cancelExtraIncome()">Avbryt</button>
+                        </div>
+                    ` : ''}
+
+                    ${state.extraIncome > 0 ? `
+                        <div style="background: rgba(76, 175, 80, 0.1); border: 2px solid rgba(76, 175, 80, 0.2); border-radius: 16px; padding: 16px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <div style="font-size: 12px; color: #81c784; margin-bottom: 4px; text-transform: uppercase; font-weight: 600;">Extra inkomst tillagd</div>
+                                <div style="font-size: 18px; font-weight: 700; color: #81c784;">${formatCurrency(state.extraIncome)}</div>
+                            </div>
+                            <button type="button" class="delete-button" onclick="removeExtraIncome()">🗑️</button>
+                        </div>
+                    ` : ''}
+
+                    ${!isSimpleMode ? `
+                        <div class="summary-bars">
+                            <div class="summary-bar">
+                                <div class="summary-bar-label">${t('totalUsed')}</div>
+                                <div class="summary-bar-amount">${formatCurrency(totalSpent)}</div>
+                            </div>
+                            <div class="summary-bar">
+                                <div class="summary-bar-label">${t('totalRemaining')}</div>
+                                <div class="summary-bar-amount">${formatCurrency(Math.max(0, (month.income + state.extraIncome) - totalSpent))}</div>
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    ${categoryHtml}
+
+                    <button class="primary-button" onclick="saveMonthAndGo()" style="margin-top: 32px;">Spara månad</button>
+                </div>
+            `;
+        }
+        function renderProfile() {
+            app.innerHTML = `
+                <div>
+                    <div class="view-header">
+                        <div class="view-header-left">
+                            <button class="icon-button" onclick="goTo('budget')">←</button>
+                        </div>
+                        <h2>${t('myProfile')}</h2>
+                        <div class="view-header-right"></div>
+                    </div>
+                    <button class="menu-button" onclick="goTo('accountSettings')">⚙️ ${t('account')}</button>
+                    <button class="menu-button" onclick="goTo('priceToTime')">💰 Pris i tid</button>
+                    <button class="menu-button" onclick="goTo('totalResult')">📊 ${t('totalResult')}</button>
+                    <button class="menu-button" onclick="goTo('history')">📅 ${t('history')}</button>
+                    <button class="menu-button" onclick="goTo('editExpenses')">✏️ ${t('editExpenses')}</button>
+                </div>
+            `;
+        }
+
+        function renderAccountSettings() {
+            app.innerHTML = `
+                <div>
+                    <div class="view-header">
+                        <div class="view-header-left">
+                            <button class="icon-button" onclick="goTo('profile')">←</button>
+                        </div>
+                        <h2>${t('account')}</h2>
+                        <div class="view-header-right"></div>
+                    </div>
+                    <div class="form-group">
+                        <label>${t('name')}</label>
+                        <input type="text" id="userName" value="${state.userName}" oninput="state.userName = this.value" placeholder="${t('name')}">
+                    </div>
+                    <div class="form-group">
+                        <label>${t('language')}</label>
+                        <select onchange="state.language = this.value; render()">
+                            <option value="sv" ${state.language === 'sv' ? 'selected' : ''}>Svenska</option>
+                            <option value="en" ${state.language === 'en' ? 'selected' : ''}>English</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>${t('currency')}</label>
+                        <select onchange="state.currency = this.value; render()">
+                            ${Object.entries(currencies).map(([code, name]) => `<option value="${code}" ${state.currency === code ? 'selected' : ''}>${code} (${name})</option>`).join('')}
+                        </select>
+                    </div>
+
+                    <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid rgba(159, 168, 218, 0.1);">
+                        <h3 style="font-size: 14px; color: #9fa8da; margin-bottom: 16px; font-weight: 600; text-transform: uppercase;">Budgetfördelning för nya månader</h3>
+
+                        <div class="budget-option ${state.budgetModel === 'recommended' ? 'active' : ''}" onclick="selectBudgetModel('recommended'); saveSettings();">
+                            <div class="budget-option-title">Rekommenderad (50/30/20)</div>
+                            <div class="budget-option-desc">Fasta: 50% | Nöjen: 30% | Sparande: 20%</div>
+                        </div>
+
+                        <div class="budget-option ${state.budgetModel === 'simple' ? 'active' : ''}" onclick="selectBudgetModel('simple'); saveSettings();" style="margin-top: 12px;">
+                            <div class="budget-option-title">Enkel översikt utan sparandet</div>
+                            <div class="budget-option-desc">Utgifter & Kvar i plånboken - utan %-basering</div>
+                        </div>
+
+                        <div class="budget-option ${state.budgetModel === 'custom' ? 'active' : ''}" onclick="selectBudgetModel('custom');" style="margin-top: 12px;">
+                            <div class="budget-option-title">Egen fördelning</div>
+                            <div class="budget-option-desc">Du väljer själv hur du vill fördela</div>
+                        </div>
+
+                        ${state.budgetModel === 'custom' ? `
+                            <div style="background: rgba(159, 168, 218, 0.05); border: 2px solid rgba(159, 168, 218, 0.1); border-radius: 16px; padding: 20px; margin-top: 16px;">
+                                <div class="form-group">
+                                    <label>Fasta kostnader (%)</label>
+                                    <input type="number" id="customFasta2" value="${state.customPercentages.fasta}" min="0" max="100" oninput="updateCustomPercentage('fasta', this.value)">
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Nöjen (%)</label>
+                                    <input type="number" id="customNojen2" value="${state.customPercentages.nojen}" min="0" max="100" oninput="updateCustomPercentage('nojen', this.value)">
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Sparande (%)</label>
+                                    <input type="number" id="customSparande2" value="${state.customPercentages.sparande}" min="0" max="100" oninput="updateCustomPercentage('sparande', this.value)">
+                                </div>
+
+                                <div style="background: rgba(102, 126, 234, 0.2); border: 2px solid rgba(102, 126, 234, 0.3); border-radius: 12px; padding: 12px; text-align: center;">
+                                    <div style="font-size: 12px; color: #9fa8da; margin-bottom: 4px;">Totalt</div>
+                                    <div style="font-size: 18px; font-weight: 700; color: ${(state.customPercentages.fasta + state.customPercentages.nojen + state.customPercentages.sparande) === 100 ? '#81c784' : '#e57373'};">${state.customPercentages.fasta + state.customPercentages.nojen + state.customPercentages.sparande}%</div>
+                                </div>
+
+                                <button type="button" class="primary-button" onclick="saveSettings()" style="margin-top: 16px;" ${(state.customPercentages.fasta + state.customPercentages.nojen + state.customPercentages.sparande) !== 100 ? 'disabled' : ''}>Spara ändringar</button>
+                            </div>
+                        ` : ''}
+                    </div>
+
+                    <button class="primary-button" onclick="saveSettings()" style="margin-top: 32px;">${t('next')}</button>
+                </div>
+            `;
+        }
+
+        function renderTotalResult() {
+            if (!state.currentMonth) return;
+            const isSimpleMode = state.budgetModel === 'simple';
+
+            // Calculate month data
+            let monthCardHtml = '';
+            if (isSimpleMode) {
+                const utgifterSpent = state.currentMonth.categories.utgifter?.items.reduce((sum, item) => sum + item.amount, 0) || 0;
+                const remaining = state.currentMonth.income - utgifterSpent;
+                
+                monthCardHtml = `
+                    <div class="total-card utgifter">
+                        <h3>Utgifter</h3>
+                        <div class="total-card-amount">${formatCurrency(utgifterSpent)}</div>
+                    </div>
+
+                    <div class="special-box">
+                        <h3 style="font-size: 14px; font-weight: 700; color: #e8eaf6;">💰 Kvar i plånboken</h3>
+                        <div class="special-box-amount">${formatCurrency(Math.max(0, remaining))}</div>
+                        <p style="font-size: 12px; color: #9fa8da;">Du kan spendera detta fritt denna månad</p>
+                    </div>
+                `;
+            } else {
+                const fataSpent = state.currentMonth.categories.fasta?.items.reduce((sum, item) => sum + item.amount, 0) || 0;
+                const nojenSpent = state.currentMonth.categories.nojen?.items.reduce((sum, item) => sum + item.amount, 0) || 0;
+                const sparandeSpent = state.currentMonth.categories.sparande?.items.reduce((sum, item) => sum + item.amount, 0) || 0;
+                const leftToUse = state.currentMonth.income - (fataSpent + sparandeSpent);
+
+                monthCardHtml = `
+                    <div class="total-card fasta">
+                        <h3>Fasta kostnader</h3>
+                        <div class="total-card-amount">${formatCurrency(fataSpent)}</div>
+                    </div>
+
+                    <div class="total-card nojen">
+                        <h3>Nöjen</h3>
+                        <div class="total-card-amount">${formatCurrency(nojenSpent)}</div>
+                    </div>
+
+                    <div class="total-card sparande">
+                        <h3>Sparande</h3>
+                        <div class="total-card-amount">${formatCurrency(sparandeSpent)}</div>
+                    </div>
+
+                    <div class="special-box">
+                        <h3 style="font-size: 14px; font-weight: 700; color: #e8eaf6;">💰 ${t('leftToUse')}</h3>
+                        <div class="special-box-amount">${formatCurrency(Math.max(0, leftToUse))}</div>
+                        <p style="font-size: 12px; color: #9fa8da;">${t('forFunAndEntertainment')}</p>
+                    </div>
+                `;
+            }
+
+            // Calculate year data
+            let yearCardHtml = '';
+            if (state.months && state.months.length > 0) {
+                if (isSimpleMode) {
+                    const yearUtgifter = state.months.reduce((sum, month) => {
+                        const spent = month.categories.utgifter?.items.reduce((s, item) => s + item.amount, 0) || 0;
+                        return sum + spent;
+                    }, 0);
+                    const yearIncome = state.months.reduce((sum, month) => sum + (month.income || 0), 0);
+                    const yearRemaining = yearIncome - yearUtgifter;
+
+                    yearCardHtml = `
+                        <div class="total-card utgifter">
+                            <h3>Utgifter (Helt år)</h3>
+                            <div class="total-card-amount">${formatCurrency(yearUtgifter)}</div>
+                        </div>
+
+                        <div class="special-box">
+                            <h3 style="font-size: 14px; font-weight: 700; color: #e8eaf6;">💰 Kvar (Helt år)</h3>
+                            <div class="special-box-amount">${formatCurrency(Math.max(0, yearRemaining))}</div>
+                            <p style="font-size: 12px; color: #9fa8da;">Total inkomst: ${formatCurrency(yearIncome)}</p>
+                        </div>
+                    `;
+                } else {
+                    const yearFata = state.months.reduce((sum, month) => {
+                        const spent = month.categories.fasta?.items.reduce((s, item) => s + item.amount, 0) || 0;
+                        return sum + spent;
+                    }, 0);
+                    const yearNojen = state.months.reduce((sum, month) => {
+                        const spent = month.categories.nojen?.items.reduce((s, item) => s + item.amount, 0) || 0;
+                        return sum + spent;
+                    }, 0);
+                    const yearSparande = state.months.reduce((sum, month) => {
+                        const spent = month.categories.sparande?.items.reduce((s, item) => s + item.amount, 0) || 0;
+                        return sum + spent;
+                    }, 0);
+                    const yearIncome = state.months.reduce((sum, month) => sum + (month.income || 0), 0);
+                    const yearLeftToUse = yearIncome - (yearFata + yearSparande);
+
+                    yearCardHtml = `
+                        <div class="total-card fasta">
+                            <h3>Fasta kostnader (Helt år)</h3>
+                            <div class="total-card-amount">${formatCurrency(yearFata)}</div>
+                        </div>
+
+                        <div class="total-card nojen">
+                            <h3>Nöjen (Helt år)</h3>
+                            <div class="total-card-amount">${formatCurrency(yearNojen)}</div>
+                        </div>
+
+                        <div class="total-card sparande">
+                            <h3>Sparande (Helt år)</h3>
+                            <div class="total-card-amount">${formatCurrency(yearSparande)}</div>
+                        </div>
+
+                        <div class="special-box">
+                            <h3 style="font-size: 14px; font-weight: 700; color: #e8eaf6;">💰 Till bruk (Helt år)</h3>
+                            <div class="special-box-amount">${formatCurrency(Math.max(0, yearLeftToUse))}</div>
+                            <p style="font-size: 12px; color: #9fa8da;">Total inkomst: ${formatCurrency(yearIncome)}</p>
+                        </div>
+                    `;
+                }
+            }
+
+            app.innerHTML = `
+                <div>
+                    <div class="view-header">
+                        <div class="view-header-left">
+                            <button class="icon-button" onclick="goTo('profile')">←</button>
+                        </div>
+                        <h2>${t('totalResult')}</h2>
+                        <div class="view-header-right"></div>
+                    </div>
+                    
+                    <div style="display: flex; gap: 8px; margin-bottom: 24px;">
+                        <button class="primary-button" style="flex: 1; padding: 10px; font-size: 13px; ${state.totalResultView === 'month' ? '' : 'background: rgba(102, 126, 234, 0.2); color: #a8b8f0;'}" onclick="state.totalResultView = 'month'; render();">📊 ${state.currentMonth.displayDate}</button>
+                        <button class="primary-button" style="flex: 1; padding: 10px; font-size: 13px; ${state.totalResultView === 'year' ? '' : 'background: rgba(102, 126, 234, 0.2); color: #a8b8f0;'}" onclick="state.totalResultView = 'year'; render();">📈 Helt år</button>
+                    </div>
+
+                    ${state.totalResultView === 'month' ? monthCardHtml : yearCardHtml}
+
+                    <button class="primary-button" onclick="resetForNewMonth()" style="margin-top: 32px; width: 100%;">Starta ny månad</button>
+                </div>
+            `;
+        }
+        function renderPriceToTime() {
+            const hourlyIncome = calculateHourlyIncome();
+            const hours = hourlyIncome > 0 && state.priceToTime.price > 0 ? state.priceToTime.price / hourlyIncome : 0;
+            const totalMinutes = Math.round(hours * 60);
+            const displayHours = Math.floor(hours);
+            const displayMinutes = Math.round((hours - displayHours) * 60);
+
+            let timeDisplay = '';
+            if (totalMinutes < 1) {
+                timeDisplay = '< 1 min';
+            } else if (displayHours === 0) {
+                timeDisplay = `${displayMinutes}m`;
+            } else if (displayMinutes === 0) {
+                timeDisplay = `${displayHours}h`;
+            } else {
+                timeDisplay = `${displayHours}h ${displayMinutes}m`;
+            }
+
+            app.innerHTML = `
+                <div>
+                    <div class="view-header">
+                        <div class="view-header-left">
+                            <button class="icon-button" onclick="goTo('profile')">←</button>
+                        </div>
+                        <h2>Pris i tid</h2>
+                        <div class="view-header-right"></div>
+                    </div>
+
+                    <p style="font-size: 15px; color: #9fa8da; margin-bottom: 28px; text-align: center; font-weight: 500;">Se den riktiga kostnaden i ditt köp</p>
+
+                    <div style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.08) 100%); border: 2px solid rgba(102, 126, 234, 0.25); border-radius: 20px; padding: 24px; margin-bottom: 28px;">
+                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 18px;">
+                            <div style="font-size: 24px;">💰</div>
+                            <h3 style="font-size: 18px; font-weight: 700; color: #e8eaf6; margin: 0;">Din inkomst</h3>
+                        </div>
+
+                        <div style="display: flex; gap: 8px; margin-bottom: 18px;">
+                            <button class="budget-option" style="flex: 1; padding: 10px; text-align: center; cursor: pointer; font-size: 14px; font-weight: 600; ${state.priceToTime.incomeType === 'hourly' ? 'border-color: #667eea; background: rgba(102, 126, 234, 0.2);' : ''}" onclick="state.priceToTime.incomeType = 'hourly'; render()">Timløn</button>
+                            <button class="budget-option" style="flex: 1; padding: 10px; text-align: center; cursor: pointer; font-size: 14px; font-weight: 600; ${state.priceToTime.incomeType === 'monthly' ? 'border-color: #667eea; background: rgba(102, 126, 234, 0.2);' : ''}" onclick="state.priceToTime.incomeType = 'monthly'; render()">Månadsinkomst</button>
+                            <button class="budget-option" style="flex: 1; padding: 10px; text-align: center; cursor: pointer; font-size: 14px; font-weight: 600; ${state.priceToTime.incomeType === 'yearly' ? 'border-color: #667eea; background: rgba(102, 126, 234, 0.2);' : ''}" onclick="state.priceToTime.incomeType = 'yearly'; render()">Årsinkomst</button>
+                        </div>
+
+                        <div style="margin-bottom: 12px;">
+                            <label style="font-size: 14px; color: #9fa8da; display: block; margin-bottom: 10px; font-weight: 600;">Din inkomst</label>
+                            <input type="number" id="incomeInput" value="${state.priceToTime.incomeAmount}" placeholder="0" onfocus="if(this.value === '0') this.value = ''" onchange="state.priceToTime.incomeAmount = parseFloat(this.value) || 0; render();" style="background: rgba(10, 14, 39, 0.6); border: 2px solid rgba(159, 168, 218, 0.2); border-radius: 12px; padding: 16px; width: 100%; color: #e8eaf6; font-family: inherit; font-size: 18px; font-weight: 600;">
+                        </div>
+                        <div style="font-size: 14px; color: #81c784; font-weight: 600;">
+                            ≈ ${formatCurrency(hourlyIncome)} per timme
+                        </div>
+                    </div>
+
+                    <div style="background: rgba(159, 168, 218, 0.05); border: 2px solid rgba(159, 168, 218, 0.1); border-radius: 16px; padding: 24px; margin-bottom: 28px;">
+                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 18px;">
+                            <div style="font-size: 24px;">🛒</div>
+                            <h3 style="font-size: 18px; font-weight: 700; color: #e8eaf6; margin: 0;">Pris att utvärdera</h3>
+                        </div>
+                        <input type="number" id="priceInput" value="${state.priceToTime.price}" placeholder="0" onfocus="if(this.value === '0') this.value = ''" onchange="state.priceToTime.price = parseFloat(this.value) || 0; render();" style="background: rgba(10, 14, 39, 0.6); border: 2px solid rgba(219, 112, 147, 0.3); border-radius: 12px; padding: 16px; width: 100%; color: #e8eaf6; font-family: inherit; font-size: 18px; font-weight: 600;">
+                        <div style="font-size: 14px; color: #9fa8da; margin-top: 10px; font-weight: 600;">
+                            ${state.currency} ${state.priceToTime.price.toFixed(0)}
+                        </div>
+                    </div>
+
+                    <div style="background: linear-gradient(135deg, rgba(255, 152, 0, 0.1) 0%, rgba(233, 30, 99, 0.05) 100%); border: 2px solid rgba(255, 152, 0, 0.2); border-radius: 16px; padding: 28px; text-align: center;">
+                        <div style="display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 18px;">
+                            <div style="font-size: 24px;">⏱️</div>
+                            <h3 style="font-size: 18px; font-weight: 700; color: #e8eaf6; margin: 0;">Tidskostad</h3>
+                        </div>
+                        <div style="font-size: 56px; font-weight: 800; color: #ff9800; margin-bottom: 12px;">${timeDisplay}</div>
+                        <div style="font-size: 16px; color: #9fa8da; margin-bottom: 10px; font-weight: 600;">${totalMinutes < 60 ? `${displayMinutes} minuter` : displayHours === 0 ? `${displayMinutes} minuter` : `${displayHours}h ${displayMinutes}m`}</div>
+                        <div style="font-size: 15px; color: #9fa8da;">Det är ungefär hur länge du behöver arbeta för detta köp</div>
+                    </div>
+                </div>
+            `;
+        }
+        function calculateHourlyIncome() {
+            if (state.priceToTime.incomeAmount <= 0) return 0;
+            
+            switch(state.priceToTime.incomeType) {
+                case 'hourly':
+                    return state.priceToTime.incomeAmount;
+                case 'monthly':
+                    return (state.priceToTime.incomeAmount * 12) / (52 * 40); // Årsinkomst / arbetade timmar per år (40h/vecka, 52 veckor)
+                case 'yearly':
+                    return state.priceToTime.incomeAmount / (52 * 40);
+                default:
+                    return 0;
+            }
+        }
+
+        function renderHistory() {
+            app.innerHTML = `
+                <div>
+                    <div class="view-header">
+                        <div class="view-header-left">
+                            <button class="icon-button" onclick="goTo('profile')">←</button>
+                        </div>
+                        <h2>${t('history')}</h2>
+                        <div class="view-header-right"></div>
+                    </div>
+                    
+                    <p style="font-size: 13px; color: #9fa8da; margin-bottom: 24px; text-align: center; font-weight: 500;">Här finns det samtliga registrerade månader</p>
+                    
+                    ${state.months && state.months.length > 0 ? state.months.map(month => {
+                        const spent = Object.values(month.categories).reduce((sum, cat) => sum + cat.items.reduce((s, item) => s + item.amount, 0), 0);
+                        return `
+                            <div class="history-month" onclick="selectMonth('${month.monthKey}')">
+                                <h3>${month.displayDate}</h3>
+                                <div class="history-month-stats">
+                                    <div style="margin-bottom: 8px;">
+                                        <span style="color: #9fa8da; font-size: 12px;">INKOMST:</span> <span style="font-weight: 700; color: #667eea;">${formatCurrency(month.income)}</span>
+                                    </div>
+                                    <div>
+                                        <span style="color: #9fa8da; font-size: 12px;">UTGIFTER:</span> <span style="font-weight: 700; color: #667eea;">${formatCurrency(spent)}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('') : '<p style="color: #9fa8da; text-align: center; padding: 32px 0;">Ingen historik ännu</p>'}
+                </div>
+            `;
+        }
+        function renderEditExpenses() {
+            if (!state.currentMonth) return;
+            let allExpenses = [];
+            Object.entries(state.currentMonth.categories).forEach(([key, cat]) => {
+                cat.items.forEach(item => {
+                    allExpenses.push({ ...item, category: key, categoryName: cat.name });
+                });
+            });
+
+            app.innerHTML = `
+                <div>
+                    <div class="view-header">
+                        <div class="view-header-left">
+                            <button class="icon-button" onclick="goTo('profile')">←</button>
+                        </div>
+                        <h2>${t('editExpenses')}</h2>
+                        <div class="view-header-right"></div>
+                    </div>
+                    ${allExpenses.length > 0 ? `
+                        <div style="margin-bottom: 24px;">
+                            ${allExpenses.map(expense => `
+                                <div style="background: rgba(159, 168, 218, 0.05); border: 2px solid rgba(159, 168, 218, 0.1); border-radius: 14px; padding: 16px; margin-bottom: 12px;">
+                                    <div style="font-size: 12px; color: #9fa8da; margin-bottom: 12px; text-transform: uppercase; font-weight: 600;">${expense.categoryName}</div>
+                                    
+                                    <div style="margin-bottom: 12px;">
+                                        <label style="font-size: 12px; color: #9fa8da; margin-bottom: 4px; display: block;">Namn</label>
+                                        <input type="text" value="${expense.name}" onchange="updateExpenseName('${expense.category}', ${expense.id}, this.value)" style="background: rgba(10, 14, 39, 0.6); border: 2px solid rgba(159, 168, 218, 0.2); border-radius: 8px; padding: 8px; color: #e8eaf6; font-family: inherit; width: 100%;">
+                                    </div>
+
+                                    <div style="display: flex; gap: 8px; align-items: flex-end;">
+                                        <div style="flex: 1;">
+                                            <label style="font-size: 12px; color: #9fa8da; margin-bottom: 4px; display: block;">Belopp</label>
+                                            <input type="number" value="${expense.amount}" onchange="updateExpenseAmount('${expense.category}', ${expense.id}, this.value)" style="background: rgba(10, 14, 39, 0.6); border: 2px solid rgba(159, 168, 218, 0.2); border-radius: 8px; padding: 8px; color: #e8eaf6; font-family: inherit; width: 100%;">
+                                        </div>
+                                        <div style="flex: 1;">
+                                            <label style="font-size: 12px; color: #9fa8da; margin-bottom: 4px; display: block;">Kategori</label>
+                                            <select onchange="moveExpense('${expense.category}', ${expense.id}, this.value)" style="background: rgba(10, 14, 39, 0.6); border: 2px solid rgba(159, 168, 218, 0.2); border-radius: 8px; padding: 8px; color: #e8eaf6; font-family: inherit; width: 100%;">
+                                                <option value="${expense.category}" selected>${expense.categoryName}</option>
+                                                ${Object.entries(state.currentMonth.categories).filter(([key]) => key !== expense.category).map(([key, cat]) => `
+                                                    <option value="${key}">→ ${cat.name}</option>
+                                                `).join('')}
+                                            </select>
+                                        </div>
+                                        <button class="delete-button" onclick="deleteExpense('${expense.category}', ${expense.id})" style="margin-bottom: 0;">🗑️</button>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : `<p style="color: #9fa8da; text-align: center; padding: 32px 0;">${t('noExpenses')}</p>`}
+                    
+                    ${allExpenses.length > 0 ? `
+                        <button class="primary-button" onclick="saveExpenseTemplate(); goTo('budget');" style="margin-top: 16px;">💾 Spara utgiftsmal</button>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        function renderCategory() {
+            if (!state.selectedCategory || !state.currentMonth) return;
+            const key = state.selectedCategory.key;
+            const cat = state.currentMonth.categories[key];
+            const spent = cat.items.reduce((sum, item) => sum + item.amount, 0);
+            const remaining = cat.budget - spent;
+            const isOverBudget = remaining < 0;
+            const warningThreshold = cat.budget * 0.1; // 10% warning of category budget
+            const isWarning = remaining >= 0 && remaining <= warningThreshold;
+
+            let statusColor = '#81c784';
+            let psychoText = 'Okej, jag kan ta en lunch idag';
+
+            if (isOverBudget) {
+                statusColor = '#e57373';
+                psychoText = 'Fyfan, nu är jag fattig...';
+            } else if (isWarning) {
+                statusColor = '#ffa726';
+                psychoText = 'Aj aj nu blir det matlådor';
+            }
+
+            app.innerHTML = `
+                <div>
+                    <div class="view-header">
+                        <div class="view-header-left">
+                            <button class="icon-button" onclick="goTo('budget')">←</button>
+                        </div>
+                        <h2>${cat.name}</h2>
+                        <div class="view-header-right"></div>
+                    </div>
+
+                    <div class="total-card" style="margin-bottom: 24px;">
+                        <h3>Status</h3>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px;">
+                            <div>
+                                <div style="font-size: 12px; color: #9fa8da; margin-bottom: 4px;">Budget</div>
+                                <div style="font-size: 18px; font-weight: 700;">${formatCurrency(cat.budget)}</div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-size: 12px; color: #9fa8da; margin-bottom: 4px;">Använt</div>
+                                <div style="font-size: 18px; font-weight: 700;">${formatCurrency(spent)}</div>
+                            </div>
+                        </div>
+                        <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(159, 168, 218, 0.1); text-align: center;">
+                            <div style="font-size: 12px; color: ${statusColor}; margin-bottom: 8px; font-weight: 600;">${isOverBudget ? 'ÖVERSTIGER BUDGET' : 'KVAR ATT ANVÄNDA'}</div>
+                            <div style="font-size: 24px; font-weight: 700; color: ${statusColor};">${formatCurrency(Math.abs(remaining))}</div>
+                        </div>
+                    </div>
+
+                    ${state.editingItem && state.editingItem.key === key ? `
+                        <div style="background: rgba(159, 168, 218, 0.05); border: 2px solid rgba(159, 168, 218, 0.1); border-radius: 12px; padding: 16px; margin-bottom: 24px; display: flex; gap: 10px; align-items: flex-end;">
+                            <input type="text" id="editName" value="${state.editingItem.name}" placeholder="Namn" style="flex: 0.5; background: rgba(10, 14, 39, 0.6); border: 2px solid rgba(159, 168, 218, 0.2); border-radius: 8px; padding: 10px; color: #e8eaf6; font-family: inherit; font-size: 13px;">
+                            <input type="number" id="editAmount" value="${state.editingItem.amount}" placeholder="Belopp" style="flex: 0.3; background: rgba(10, 14, 39, 0.6); border: 2px solid rgba(159, 168, 218, 0.2); border-radius: 8px; padding: 10px; color: #e8eaf6; font-family: inherit; font-size: 13px; min-width: 80px;" min="1">
+                            <button type="button" class="primary-button" style="padding: 10px 18px; font-size: 13px; margin: 0;" onclick="saveEditingItem('${key}')">Uppdatera</button>
+                            <button type="button" style="background: rgba(159, 168, 218, 0.1); border: 2px solid rgba(159, 168, 218, 0.2); border-radius: 8px; padding: 10px 16px; color: #9fa8da; cursor: pointer; font-size: 13px; font-weight: 600;" onclick="cancelEditing()">Avbryt</button>
+                        </div>
+                    ` : `
+                        <div style="background: rgba(159, 168, 218, 0.05); border: 2px solid rgba(159, 168, 218, 0.1); border-radius: 12px; padding: 16px; margin-bottom: 24px; display: flex; gap: 10px; align-items: flex-end;">
+                            <input type="text" id="expenseName" placeholder="Namn" style="flex: 0.5; background: rgba(10, 14, 39, 0.6); border: 2px solid rgba(159, 168, 218, 0.2); border-radius: 8px; padding: 10px; color: #e8eaf6; font-family: inherit; font-size: 13px;">
+                            <input type="number" id="expenseAmount" placeholder="Belopp" style="flex: 0.3; background: rgba(10, 14, 39, 0.6); border: 2px solid rgba(159, 168, 218, 0.2); border-radius: 8px; padding: 10px; color: #e8eaf6; font-family: inherit; font-size: 13px; min-width: 80px;" min="1">
+                            <button type="button" class="primary-button" style="padding: 10px 18px; font-size: 13px; margin: 0;" onclick="addExpenseQuick('${key}')">Lägg till</button>
+                        </div>
+                    `}
+
+                    <h3 style="font-size: 14px; color: #9fa8da; margin-bottom: 16px; font-weight: 600; text-transform: uppercase; margin-top: 32px;">Sparade utgifter (${cat.items.length})</h3>
+                    <div style="margin-bottom: 32px;">
+                        ${cat.items.map(item => `
+                            <div class="expense-item" style="align-items: center;">
+                                <span class="expense-name">${item.name}</span>
+                                <span class="expense-amount">${formatCurrency(item.amount)}</span>
+                                <button type="button" style="background: none; border: none; cursor: pointer; font-size: 16px; padding: 6px; color: #667eea; opacity: 0.7; transition: all 0.2s ease;" onclick="editExpense('${key}', ${item.id})" onmouseover="this.style.opacity='1';" onmouseout="this.style.opacity='0.7';">✏️</button>
+                                <button class="delete-button" onclick="deleteExpense('${key}', ${item.id})">🗑️</button>
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    <button class="primary-button" onclick="goTo('budget')" style="width: 100%;">✓ Klart</button>
+                </div>
+            `;
+            if (!state.editingItem || state.editingItem.key !== key) {
+                document.getElementById('expenseName')?.focus();
+            } else {
+                document.getElementById('editName')?.focus();
+            }
+        }
+
+        function addExpenseQuick(key) {
+            const nameInput = document.getElementById('expenseName');
+            const amountInput = document.getElementById('expenseAmount');
+            
+            if (!nameInput || !amountInput) return;
+            
+            const name = nameInput.value.trim();
+            const amount = parseFloat(amountInput.value);
+            
+            // Validate inputs
+            if (!name || !amount || amount <= 0 || isNaN(amount)) {
+                alert('Fyll i ett giltigt namn och belopp');
+                return;
+            }
+
+            // Ensure current month exists
+            if (!state.currentMonth || !state.currentMonth.categories[key]) {
+                alert('Fel: Kategorin hittades inte');
+                return;
+            }
+
+            // Add the expense with unique ID
+            const newExpense = {
+                id: Date.now() + Math.floor(Math.random() * 10000),
+                name: name,
+                amount: amount
+            };
+            
+            state.currentMonth.categories[key].items.push(newExpense);
+
+            // Save state to localStorage immediately
+            saveState();
+            
+            // Render will recreate all HTML
+            render();
+            
+            // After render, focus back on name input if it exists
+            setTimeout(() => {
+                const newNameInput = document.getElementById('expenseName');
+                if (newNameInput) {
+                    newNameInput.focus();
+                }
+            }, 0);
+        }
+
+        // HANDLERS
+        function goTo(view) { state.view = view; saveState(); render(); }
+        function goToCategory(key) { state.selectedCategory = { key, ...state.currentMonth.categories[key] }; goTo('category'); }
+        
+        function resetForNewMonth() {
+            state.currentMonth = null;
+            state.selectedCategory = null;
+            state.extraIncome = 0;
+            state.showExtraIncomeForm = false;
+            state.pendingIncome = 0;
+            state.pendingMonth = new Date().getMonth() + 1;
+            state.pendingYear = new Date().getFullYear();
+            state.totalResultView = 'month';
+            goTo('createIncome');
+        }
+
+        function selectBudgetModel(model) {
+            state.budgetModel = model;
+            if (model === 'recommended') {
+                state.customPercentages = { fasta: 50, nojen: 30, sparande: 20 };
+            } else if (model === 'simple') {
+                // Simple model doesn't use percentages
+                state.customPercentages = { fasta: 0, nojen: 0, sparande: 0 };
+            }
+        }
+
+        function updateCustomPercentage(category, value) {
+            state.customPercentages[category] = Math.max(0, Math.min(100, parseInt(value) || 0));
+            render();
+        }
+
+        function createBudgetWithDate() {
+            const income = state.pendingIncome;
+            const month = state.pendingMonth;
+            const year = state.pendingYear;
+            
+            if (!income || income <= 0) {
+                alert('Ange en giltig inkomst');
+                return;
+            }
+
+            const monthNames = ['', 'Januari', 'Februari', 'Mars', 'April', 'Maj', 'Juni', 'Juli', 'Augusti', 'September', 'Oktober', 'November', 'December'];
+            const monthKey = `${year}-${String(month).padStart(2, '0')}`;
+            const displayDate = month > 0 ? `${monthNames[month]} ${year}` : `${year}`;
+
+            let newMonth;
+            
+            if (state.budgetModel === 'simple') {
+                // Simple model: just Utgifter and Kvar (no percentages)
+                newMonth = {
+                    monthKey, displayDate, income, extraIncome: 0,
+                    categories: {
+                        utgifter: { name: 'Utgifter', percentage: 0, budget: income, items: [] },
+                        kvar: { name: 'Kvar i plånboken', percentage: 0, budget: 0, items: [] }
+                    }
+                };
+            } else {
+                // Percentage-based models
+                newMonth = {
+                    monthKey, displayDate, income, extraIncome: 0,
+                    categories: {
+                        fasta: { name: t('fixedCosts'), percentage: state.customPercentages.fasta, budget: income * (state.customPercentages.fasta / 100), items: [] },
+                        nojen: { name: t('fun'), percentage: state.customPercentages.nojen, budget: income * (state.customPercentages.nojen / 100), items: [] },
+                        sparande: { name: t('savings'), percentage: state.customPercentages.sparande, budget: income * (state.customPercentages.sparande / 100), items: [] }
+                    }
+                };
+            }
+
+            // Ensure months array exists
+            if (!state.months) {
+                state.months = [];
+            }
+
+            // Check if month already exists
+            const existingIndex = state.months.findIndex(m => m.monthKey === monthKey);
+            if (existingIndex >= 0) {
+                state.months[existingIndex] = newMonth;
+            } else {
+                state.months.push(newMonth);
+                // Sort months by monthKey
+                state.months.sort((a, b) => a.monthKey.localeCompare(b.monthKey));
+            }
+
+            state.currentMonth = newMonth;
+            state.extraIncome = 0;
+            // Populate Price to Time with the monthly income
+            state.priceToTime.incomeType = 'monthly';
+            state.priceToTime.incomeAmount = income;
+            saveState();
+            goTo('budget');
+        }
+
+        function createBudget() {
+            const income = parseFloat(document.getElementById('incomeInput').value);
+            if (!income || income <= 0) {
+                alert('Ange en giltig inkomst');
+                return;
+            }
+
+            const now = new Date();
+            const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+            const monthNames = ['', 'Januari', 'Februari', 'Mars', 'April', 'Maj', 'Juni', 'Juli', 'Augusti', 'September', 'Oktober', 'November', 'December'];
+            const displayDate = `${monthNames[now.getMonth() + 1]} ${now.getFullYear()}`;
+
+            const newMonth = {
+                monthKey, displayDate, income,
+                categories: {
+                    fasta: { name: t('fixedCosts'), percentage: state.customPercentages.fasta, budget: income * (state.customPercentages.fasta / 100), items: [] },
+                    nojen: { name: t('fun'), percentage: state.customPercentages.nojen, budget: income * (state.customPercentages.nojen / 100), items: [] },
+                    sparande: { name: t('savings'), percentage: state.customPercentages.sparande, budget: income * (state.customPercentages.sparande / 100), items: [] }
+                }
+            };
+
+            const newAccount = { id: 'acc_' + Date.now(), name: 'Mitt konto', months: [newMonth] };
+            state.accounts = [newAccount];
+            state.currentAccountId = newAccount.id;
+            state.currentMonth = newMonth;
+            state.extraIncome = 0;
+            saveState();
+            goTo('budget');
+        }
+
+        function toggleExtraIncome() {
+            state.showExtraIncomeForm = !state.showExtraIncomeForm;
+            render();
+            if (state.showExtraIncomeForm) {
+                setTimeout(() => {
+                    const input = document.getElementById('extraIncomeInput');
+                    if (input) input.focus();
+                }, 100);
+            }
+        }
+
+        function removeExtraIncome() {
+            state.extraIncome = 0;
+            if (state.currentMonth) {
+                state.currentMonth.extraIncome = 0;
+            }
+            state.showExtraIncomeForm = false;
+            saveState();
+            render();
+        }
+
+        function cancelExtraIncome() {
+            state.showExtraIncomeForm = false;
+            render();
+        }
+
+        function updateMainIncome(newIncome) {
+            const income = parseFloat(newIncome);
+            if (income && income > 0) {
+                state.currentMonth.income = income;
+                // Uppdatera budget för varje kategori baserat på ny inkomst
+                Object.keys(state.currentMonth.categories).forEach(key => {
+                    state.currentMonth.categories[key].budget = state.currentMonth.income * (state.currentMonth.categories[key].percentage / 100);
+                });
+                saveState();
+                render();
+            }
+        }
+
+        function saveExtraIncome() {
+            const input = document.getElementById('extraIncomeInput');
+            if (input) {
+                const value = parseFloat(input.value);
+                if (value > 0) {
+                    state.extraIncome = value;
+                    if (state.currentMonth) {
+                        state.currentMonth.extraIncome = value;
+                    }
+                    state.showExtraIncomeForm = false;
+                    saveState();
+                    render();
+                } else {
+                    input.focus();
+                }
+            }
+        }
+
+        function addExpense(key, e) {
+            e.preventDefault();
+            const name = document.getElementById('expenseName').value;
+            const amount = parseFloat(document.getElementById('expenseAmount').value);
+            if (!name || !amount) return;
+            state.currentMonth.categories[key].items.push({ id: Date.now(), name, amount });
+            saveState();
+            goTo('category');
+        }
+
+        function startEditingItem(key, id, name, amount) {
+            state.editingItem = { key, id, name, amount };
+            render();
+        }
+
+        function editExpense(key, id) {
+            if (!state.currentMonth || !state.currentMonth.categories[key]) return;
+            
+            const item = state.currentMonth.categories[key].items.find(i => i.id === id);
+            if (item) {
+                state.editingItem = { key, id, name: item.name, amount: item.amount };
+                render();
+            }
+        }
+
+        function saveEditingItem(key) {
+            const nameInput = document.getElementById('editName');
+            const amountInput = document.getElementById('editAmount');
+            
+            if (!nameInput || !amountInput) return;
+            
+            const name = nameInput.value.trim();
+            const amount = parseFloat(amountInput.value);
+            
+            // Validate inputs
+            if (!name || !amount || amount <= 0 || isNaN(amount)) {
+                alert('Fyll i ett giltigt namn och belopp');
+                return;
+            }
+
+            if (!state.currentMonth || !state.currentMonth.categories[key]) {
+                alert('Fel: Kategorin hittades inte');
+                return;
+            }
+
+            const item = state.currentMonth.categories[key].items.find(i => i.id === state.editingItem.id);
+            if (item) {
+                item.name = name;
+                item.amount = amount;
+                state.editingItem = null;
+                saveState();
+                render();
+            } else {
+                alert('Fel: Utgiften hittades inte');
+            }
+        }
+
+        function cancelEditing() {
+            state.editingItem = null;
+            render();
+        }
+
+        function saveMonthAndGo() {
+            if (!state.currentMonth) {
+                alert('Ingen månad att spara!');
+                return;
+            }
+            
+            // Ensure months array exists
+            if (!state.months) {
+                state.months = [];
+            }
+            
+            // Make sure the current month is in the months array
+            const existingIndex = state.months.findIndex(m => m.monthKey === state.currentMonth.monthKey);
+            if (existingIndex >= 0) {
+                // Update existing month
+                state.months[existingIndex] = { ...state.currentMonth };
+            } else {
+                // Add new month
+                state.months.push({ ...state.currentMonth });
+                // Sort months by monthKey
+                state.months.sort((a, b) => a.monthKey.localeCompare(b.monthKey));
+            }
+            
+            // Save to localStorage
+            saveState();
+            
+            // Confirm save
+            alert(`✅ ${state.currentMonth.displayDate} har sparats!`);
+            goTo('totalResult');
+        }
+
+        function deleteExpense(key, id) {
+            state.currentMonth.categories[key].items = state.currentMonth.categories[key].items.filter(i => i.id !== id);
+            saveState();
+            render();
+        }
+
+        function saveExpenseTemplate() {
+            if (!state.currentMonth) return;
+            // Save all expenses from current month
+            let template = {};
+            Object.entries(state.currentMonth.categories).forEach(([key, cat]) => {
+                template[key] = cat.items.map(item => ({ ...item }));
+            });
+            state.savedExpenseTemplate = template;
+            saveState();
+        }
+
+        function applyExpenseTemplate() {
+            if (!state.savedExpenseTemplate || !state.currentMonth) return;
+            // Copy saved expenses to current month categories
+            Object.entries(state.savedExpenseTemplate).forEach(([key, items]) => {
+                if (state.currentMonth.categories[key]) {
+                    state.currentMonth.categories[key].items = items.map(item => ({
+                        ...item,
+                        id: Date.now() + Math.random() // Give new IDs
+                    }));
+                }
+            });
+            saveState();
+        }
+
+        function updateExpenseName(key, id, newName) {
+            const item = state.currentMonth.categories[key].items.find(i => i.id === id);
+            if (item && newName.trim()) {
+                item.name = newName;
+                saveState();
+                render();
+            }
+        }
+
+        function updateExpenseAmount(key, id, newAmount) {
+            const item = state.currentMonth.categories[key].items.find(i => i.id === id);
+            if (item && parseFloat(newAmount) > 0) {
+                item.amount = parseFloat(newAmount);
+                saveState();
+                render();
+            }
+        }
+
+        function moveExpense(fromKey, id, toKey) {
+            if (fromKey === toKey) return;
+            
+            const item = state.currentMonth.categories[fromKey].items.find(i => i.id === id);
+            if (item) {
+                // Radera från gamla kategorin
+                state.currentMonth.categories[fromKey].items = state.currentMonth.categories[fromKey].items.filter(i => i.id !== id);
+                
+                // Lägg till i nya kategorin
+                state.currentMonth.categories[toKey].items.push(item);
+                
+                saveState();
+                render();
+            }
+        }
+
+        function saveSettings() { saveState(); goTo('profile'); }
+
+        function selectMonth(monthKey) {
+            const month = state.months.find(m => m.monthKey === monthKey);
+            if (month) { state.currentMonth = month; goTo('budget'); }
+        }
+
+        const app = document.getElementById('app');
+        
+        // Load saved data from localStorage
+        loadState();
+        
+        // Ensure months array exists
+        if (!state.months) {
+            state.months = [];
+        }
+        
+        // Determine initial view
+        if (state.months.length === 0) {
+            state.view = 'start';
+        } else {
+            state.currentMonth = state.months[0];
+            state.view = 'budget';
+        }
+        
+        render();
+    </script>
+</body>
+</html>
